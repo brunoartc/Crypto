@@ -139,3 +139,4 @@ cython_debug/
 
 data/*
 !data/.gitkeep
+!data/*_v2.json
