@@ -3,10 +3,12 @@ import json
 import requests
 from enum import Enum
 import dateutil.parser as parser
+from datetime import datetime
+
 
 class DeltaTime(Enum):
-    H24 = 1440
-    H12 = 1440
+    H24 = 24*60
+    H12 = 12*60
     H4 = 4*60
     H2 = 2*60
     H1 = 60
@@ -20,9 +22,7 @@ class DeltaTime(Enum):
         return self.value
 
 
-
-def get_cotract_txs(api_token: str, token_address:str = "0x4D5eCA1e4FE912904544043feCEB6858DDd3d866"):
-
+def get_cotract_txs(api_token: str, token_address: str = "0x4D5eCA1e4FE912904544043feCEB6858DDd3d866"):
 
     url = f"https://api.bscscan.com/api?module=account&action=txlist&address={token_address}&startblock=1&endblock=99999999&sort=asc&apikey={api_token}"
 
@@ -30,16 +30,17 @@ def get_cotract_txs(api_token: str, token_address:str = "0x4D5eCA1e4FE9129045440
 
     data = json.loads(response.read())
     data_clean = [{
-        'blockNumber' : tx['blockNumber'],
-        'timeStamp' : tx['timeStamp'],
-        'hash' : tx['hash'],
-        'from' : tx['from'],
+        'blockNumber': tx['blockNumber'],
+        'timeStamp': tx['timeStamp'],
+        'hash': tx['hash'],
+        'from': tx['from'],
     } for tx in data['result']]
     return data_clean
 
-def get_cotract_internal_txs_bep20(api_token: str, token_address:str = "0x4D5eCA1e4FE912904544043feCEB6858DDd3d866"):
 
-    #&page=1&offset=100
+def get_cotract_internal_txs_bep20(api_token: str, token_address: str = "0x4D5eCA1e4FE912904544043feCEB6858DDd3d866"):
+
+    # &page=1&offset=100
     url = f"https://api.bscscan.com/api?module=account&action=tokentx&contractaddress={token_address}&sort=asc&apikey={api_token}"
 
     response = urllib.urlopen(url)
@@ -47,22 +48,19 @@ def get_cotract_internal_txs_bep20(api_token: str, token_address:str = "0x4D5eCA
     data = json.loads(response.read())
     print
     data_clean = [{
-        'blockNumber' : tx['blockNumber'],
-        'timeStamp' : tx['timeStamp'],
-        'hash' : tx['hash'],
-        'from' : tx['from'],
+        'blockNumber': tx['blockNumber'],
+        'timeStamp': tx['timeStamp'],
+        'hash': tx['hash'],
+        'from': tx['from'],
     } for tx in data['result']]
     return data_clean
 
-def get_candles_poo_coin(base_token: str = "0x375483cfa7fc18f6b455e005d835a8335fbdbb1f", minute_window:int = DeltaTime.H1, init_time_str: str = "2021-04-30T19:35:00.000Z", end_time_str = "2021-06-03T19:35:00.000Z"):
-    init_time = parser.parse(init_time_str).isoformat() 
-    end_time = parser.parse(end_time_str).isoformat()
-    
-    
+
+def get_candles_poo_coin(base_token: str, init_time: datetime, end_time: datetime, minute_window: int = DeltaTime.H1):
     url = "https://chartdata.poocoin.app/"
 
     payload = {
-        "query":'''query GetCandleData(
+        "query": '''query GetCandleData(
             $baseCurrency: String!,
             $since: ISO8601DateTime,
             $till: ISO8601DateTime,
@@ -97,28 +95,28 @@ def get_candles_poo_coin(base_token: str = "0x375483cfa7fc18f6b455e005d835a8335f
                 }
             }''',
         "variables":
-            {"baseCurrency":base_token,
-            "quoteCurrency":"0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
-            "since":init_time,
-            "till":end_time,
-            "window":int(minute_window),
-            "exchangeAddresses":["0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"],
-            "minTrade":10}
-        }
+            {"baseCurrency": base_token,
+             "quoteCurrency": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+             "since": init_time.isoformat(),
+             "till": end_time.isoformat(),
+             "window": int(minute_window),
+             "exchangeAddresses": ["0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"],
+             "minTrade": 10}
+    }
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
         'Content-Type': 'application/json'
     }
 
-    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+    response = requests.request(
+        "POST", url, headers=headers, data=json.dumps(payload))
+
+    response.raise_for_status()
 
     return json.loads(response.text)
 
 
-#WIP
+# WIP
 #print([tx['hash']  for tx in get_cotract_internal_txs_bep20()])
 #print([tx['hash'] if tx['from'] == "0x1085c0c13c0a6e5b3b1e71b4580c9078009fa881" else ""  for tx in get_cotract_internal_txs_bep20()])
-
-
-
